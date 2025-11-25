@@ -1,0 +1,64 @@
+/* Settings to occupied whole screen */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+/* Overall Container (LHS + RHS) */
+.container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    height: 100vh;
+}
+
+/* LHS- Canvas display area */
+.canvas-area {
+    flex: 3.5;
+    display: flex;
+    width: 100%;
+    height: 100%;
+    background: #111;
+}
+
+/* RHS - Control Panel */
+.control-panel {
+    flex: 1;
+    background: #1e1e1e;
+    color: white;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    border-left: 2px solid #333;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Place character input box to the end of RHS */
+.character-input-box {
+    margin-top: auto;
+    padding-top: 20px;
+    border-top: 1px solid #444;
+}
+
+.inputPrompt {
+    display: block;
+    margin-bottom: 10px;
+}
+
+#wordInput {
+    width: 90%;
+    padding: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    text-transform: uppercase; 
+    /* Transform to Uppercase */
+}
+
+/* Occupied whole left hand side */
+#gl-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}

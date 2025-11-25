@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title> CPC354 Assignment 1 - TV Ident </title>
+
+    <!-- Vertex Shader -->
+    <script id="vertex-shader" type="x-shader/x-vertex">
+
+      // Global Variable
+      uniform mat4 projectionMatrix;
+      uniform mat4 modelViewMatrix;
+
+      // Input Position/Color variable from application
+      attribute vec4 vPosition;
+      attribute vec4 vColor;
+
+      // Varying data to pass to fragment shader
+      varying vec4 fColor;
+
+      void main()
+      {
+        gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+        fColor = vColor;
+      }
+    </script>
+
+    <!-- Fragement Shader -->
+    <script id="fragment-shader" type="x-shader/x-fragment">
+      precision mediump float;
+      varying vec4 fColor;
+
+      void main()
+      {
+        gl_FragColor = fColor;
+      }
+    </script>
+
+    <!-- Link with external css sheet and javascript file -->
+    <script type="text/javascript" src="/Common/initShaders.js"></script>
+    <script type="text/javascript" src="/Common/MV.js"></script>
+    <script type="text/javascript" src="/Common/webgl-utils.js"></script>
+    <script type="text/javascript" src="/main.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
+
+  </head>
+
+  <body>
+    <div class="container">
+
+      <!-- Left side: WebGL canvas -->
+      <div class="canvas-area">
+        <canvas id="gl-canvas">
+          Error: Browser doesn't support HTML5 canvas element
+        </canvas>
+      </div>
+
+      <!-- Right side: Control Panel -->
+      <div class="control-panel">
+        <h2>Parameter Controls Panel</h2>
+
+        <!-- Parameters controls UI here -->
+
+        <!-- Bottom Input character area -->
+        <div class="character-input-box">
+          <label class='inputPrompt' for="wordInput">Enter 1 to 4 letters:</label>
+          <input 
+            type="text" 
+            id="wordInput" 
+            maxlength="4" 
+            placeholder="ABCD"
+          >
+        </div>
+      </div>
+
+    </div>
+  </body>
+
+</html>
