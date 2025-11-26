@@ -110,7 +110,7 @@ function render() {
     modelViewMatrix = mult(modelViewMatrix, rotate(phi, [1, 0, 0]));
     // Rotate around Y axis (left/right mouse movement)
     modelViewMatrix = mult(modelViewMatrix, rotate(theta, [0, 1, 0]));
-    
+
     modelViewMatrix = mult(modelViewMatrix, scale(0.02, -0.02, 0.02)); 
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
 
@@ -142,7 +142,8 @@ function getSignedArea(points) {
 }
 
 // Helper to run Earcut on a single grouped solid
-function triangulateSolid(solid, targetArray) {
+// Updated helper to accept a specific Z depth
+function triangulateSolid(solid, z, targetArray, reverseWinding = false) {
     const flatCoords = [];
     const holeIndices = [];
     let indexOffset = 0;
@@ -165,29 +166,49 @@ function triangulateSolid(solid, targetArray) {
     // Run Earcut
     const indices = earcut(flatCoords, holeIndices);
 
-    // Map back to 2D points
+    // If generating the Back Face, we often reverse the index order 
+    // so the face normals point "outwards" (away from the center of the object)
+    if (reverseWinding) {
+        indices.reverse();
+    }
+
+    // Map back to 3D points
     for (let i = 0; i < indices.length; i++) {
         const idx = indices[i];
-        targetArray.push({ x: flatCoords[idx * 2], y: flatCoords[idx * 2 + 1] });
+        targetArray.push({ 
+            x: flatCoords[idx * 2], 
+            y: flatCoords[idx * 2 + 1],
+            z: z // Apply the requested depth
+        });
     }
 }
 
 // Helper to finalize the array
 function flattenAndCenter(triangles) {
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    // Initialize bounds
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+
+    // Calculate Bounding Box
     triangles.forEach(p => {
         if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
         if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
+        if (p.z < minZ) minZ = p.z; if (p.z > maxZ) maxZ = p.z;
     });
+
+    // Find Center
     const centerX = (minX + maxX) / 2;
     const centerY = (minY + maxY) / 2;
+    const centerZ = (minZ + maxZ) / 2;
     
     const finalData = [];
     triangles.forEach(p => {
         finalData.push(p.x - centerX);
         finalData.push(p.y - centerY);
-        finalData.push(0.0);
+        finalData.push(p.z - centerZ); 
     });
+    
     return new Float32Array(finalData);
 }
 
@@ -256,7 +277,25 @@ function getContoursFromPath(commands, segmentsPerCurve = 10) {
     return contours;
 }
 
-// ---------------------- EXECUTION ----------------------
+function addSideWalls(contour, zFront, zBack, targetArray) {
+    const len = contour.length;
+    for (let i = 0; i < len; i++) {
+        let curr = contour[i];
+        let next = contour[(i + 1) % len]; // Wrap to start
+
+        // We create a "Quad" (2 triangles) for every segment of the outline
+        
+        // Triangle 1
+        targetArray.push({ x: curr.x, y: curr.y, z: zFront });
+        targetArray.push({ x: next.x, y: next.y, z: zFront });
+        targetArray.push({ x: curr.x, y: curr.y, z: zBack });
+
+        // Triangle 2
+        targetArray.push({ x: next.x, y: next.y, z: zBack });
+        targetArray.push({ x: curr.x, y: curr.y, z: zBack });
+        targetArray.push({ x: next.x, y: next.y, z: zFront }); // Note: vertex order matters for culling, but simpler here
+    }
+}
 
 // ---------------------- EXECUTION ----------------------
 
@@ -264,6 +303,10 @@ function generateTextVertices(text) {
     if (!text || text.length === 0) return new Float32Array([]);
 
     const fontSize = 100;
+    const thickness = 20; // How deep the 3D text is
+    const frontZ = thickness / 2;
+    const backZ = -thickness / 2;
+
     let allTriangles = [];
     let cursorX = 0; 
 
@@ -271,20 +314,19 @@ function generateTextVertices(text) {
         const char = text[i];
         const glyph = loadedFont.charToGlyph(char);
         const path = glyph.getPath(cursorX, 0, fontSize);
+        console.log("Character:", char, "Path:", path);
         
-        // 1. Get all contours (loops of points)
-        // (Make sure you still have the 'getContoursFromPath' function from the previous step)
+        // 1. Get contours
         const rawContours = getContoursFromPath(path.commands, 10);
 
         if (rawContours.length > 0) {
-            // 2. Calculate Area for every contour to determine its type
+            // 2. Classify (Area calculation)
             const classified = rawContours.map(points => ({
                 points: points,
                 area: getSignedArea(points)
             }));
 
-            // 3. Identify the "Solid" winding direction
-            // The largest shape is always a solid (e.g., the main body of the letter)
+            // 3. Identify Solid vs Hole
             const largest = classified.reduce((a, b) => 
                 Math.abs(b.area) > Math.abs(a.area) ? b : a
             );
@@ -293,22 +335,32 @@ function generateTextVertices(text) {
             // 4. Group Contours
             let currentSolid = null;
             
+            // Helper to process a complete solid (Front + Back + Sides)
+            const processSolid = (solid) => {
+                // A. Front Face
+                triangulateSolid(solid, frontZ, allTriangles, false);
+                
+                // B. Back Face
+                triangulateSolid(solid, backZ, allTriangles, true);
+
+                // C. Side Walls (Outer)
+                addSideWalls(solid.outer, frontZ, backZ, allTriangles);
+
+                // D. Side Walls (Holes)
+                solid.holes.forEach(hole => {
+                    addSideWalls(hole, frontZ, backZ, allTriangles);
+                });
+            };
+
             classified.forEach(c => {
-                // If it has the same winding as the largest shape, it's a NEW Solid
                 if (Math.sign(c.area) === solidSign) {
-                    // Process the previous solid if it exists
-                    if (currentSolid) triangulateSolid(currentSolid, allTriangles);
-                    
-                    // Start a new solid
+                    if (currentSolid) processSolid(currentSolid);
                     currentSolid = { outer: c.points, holes: [] };
-                } 
-                else {
-                    // If opposite winding, it's a hole for the current solid
+                } else {
                     if (currentSolid) currentSolid.holes.push(c.points);
                 }
             });
-            // Don't forget the last one
-            if (currentSolid) triangulateSolid(currentSolid, allTriangles);
+            if (currentSolid) processSolid(currentSolid);
         }
 
         cursorX += glyph.advanceWidth * (fontSize / loadedFont.unitsPerEm);
@@ -316,7 +368,6 @@ function generateTextVertices(text) {
 
     if (allTriangles.length === 0) return new Float32Array([]);
 
-    // Center and Flatten
     return flattenAndCenter(allTriangles);
 }
 

@@ -9,16 +9,26 @@
       uniform mat4 modelViewMatrix;
       attribute vec3 vPosition;
 
+      varying float vDepth;
+
       void main() {
         gl_Position = projectionMatrix * modelViewMatrix * vec4(vPosition, 1.0);
+        vDepth = vPosition.z;
       }
     </script>
 
     <script id="fragment-shader" type="x-shader/x-fragment">
       precision mediump float;
+      varying float vDepth;
+
       void main() {
-        // bright green for the outline
-        gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0); 
+        // Simple fake shading: 
+        // Front face (positive Z) is bright, back/sides are darker
+        float brightness = 0.5 + (vDepth * 0.02); 
+        if (brightness > 1.0) brightness = 1.0;
+        if (brightness < 0.2) brightness = 0.2;
+        
+        gl_FragColor = vec4(0.0, brightness, 0.0, 1.0);
       }
     </script>
 
