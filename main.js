@@ -8,7 +8,17 @@ var modelViewMatrix, projectionMatrix;
 // Global State
 let loadedFont = null; 
 let meshPositions = null; 
-let vertexCount = 0;      
+let vertexCount = 0;
+
+// Rotation State
+var theta = 0;  // Rotation around Y axis
+var phi = 0;    // Rotation around X axis
+var dr = 5.0 * Math.PI/180.0; // Speed multiplier
+
+// Mouse State
+var dragging = false;
+var lastX = 0;
+var lastY = 0;
 
 // ---------------------------------------------------- WebGL Setup ------------------------------------------------------------
 
@@ -37,6 +47,39 @@ function configureWebGL() {
     // Initialize the buffer once here
     posBuffer = gl.createBuffer();
     vPosition = gl.getAttribLocation(program, "vPosition");
+
+    // Mouse Event Listeners for Rotation
+    canvas.addEventListener("mousedown", function(e) {
+        dragging = true;
+        lastX = e.clientX;
+        lastY = e.clientY;
+    });
+
+    canvas.addEventListener("mouseup", function(e) {
+        dragging = false;
+    });
+
+    canvas.addEventListener("mousemove", function(e) {
+        if (!dragging) return;
+        
+        var x = e.clientX;
+        var y = e.clientY;
+        
+        // Calculate change in position
+        var deltaX = x - lastX;
+        var deltaY = y - lastY;
+
+        // Update rotation angles based on movement
+        theta += deltaX * 0.5; // 0.5 is sensitivity
+        phi   += deltaY * 0.5;
+
+        lastX = x;
+        lastY = y;
+        
+        // Optional: Limit vertical rotation so it doesn't flip upside down
+        // if (phi > 90) phi = 90;
+        // if (phi < -90) phi = -90;
+    });
 }
 
 function render() {
@@ -48,7 +91,8 @@ function render() {
         gl.viewport(0, 0, canvas.width, canvas.height);
     }
 
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.enable(gl.DEPTH_TEST);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     // Basic Orthographic Projection
     let aspect = canvas.width / canvas.height;
@@ -60,6 +104,13 @@ function render() {
 
     // View Matrix
     modelViewMatrix = mat4();
+
+    // Apply Rotations FIRST
+    // Rotate around X axis (up/down mouse movement)
+    modelViewMatrix = mult(modelViewMatrix, rotate(phi, [1, 0, 0]));
+    // Rotate around Y axis (left/right mouse movement)
+    modelViewMatrix = mult(modelViewMatrix, rotate(theta, [0, 1, 0]));
+    
     modelViewMatrix = mult(modelViewMatrix, scale(0.02, -0.02, 0.02)); 
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
 
