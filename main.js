@@ -65,7 +65,7 @@ function render() {
 
     if (!meshPositions || vertexCount === 0) return;
 
-    gl.drawArrays(gl.LINES, 0, vertexCount);
+    gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
 }
 
 function updateBufferData() {
@@ -77,70 +77,135 @@ function updateBufferData() {
     gl.vertexAttribPointer(vPosition, 3, gl.FLOAT, false, 0, 0);
 }
 
+
 // ---------------------- STEP 2: Flatten / Approximate Curves ----------------------
 
-function flattenPathToPoints(commands, segmentsPerCurve = 10) {
-    const points = [];
-    let cursor = { x: 0, y: 0 };
-    let startOfContour = { x: 0, y: 0 };
+// Helper: Calculate signed area to detect winding direction
+function getSignedArea(points) {
+    let area = 0;
+    for (let i = 0; i < points.length; i++) {
+        let j = (i + 1) % points.length;
+        area += (points[i].x * points[j].y) - (points[j].x * points[i].y);
+    }
+    return area / 2;
+}
 
-    function addLineSegment(xStart, yStart, xEnd, yEnd) {
-        points.push({ x: xStart, y: yStart }); 
-        points.push({ x: xEnd, y: yEnd });     
+// Helper to run Earcut on a single grouped solid
+function triangulateSolid(solid, targetArray) {
+    const flatCoords = [];
+    const holeIndices = [];
+    let indexOffset = 0;
+
+    // Add Outer Ring
+    solid.outer.forEach(p => {
+        flatCoords.push(p.x, p.y);
+        indexOffset += 2;
+    });
+
+    // Add Holes
+    solid.holes.forEach(hole => {
+        holeIndices.push(indexOffset / 2);
+        hole.forEach(p => {
+            flatCoords.push(p.x, p.y);
+            indexOffset += 2;
+        });
+    });
+
+    // Run Earcut
+    const indices = earcut(flatCoords, holeIndices);
+
+    // Map back to 2D points
+    for (let i = 0; i < indices.length; i++) {
+        const idx = indices[i];
+        targetArray.push({ x: flatCoords[idx * 2], y: flatCoords[idx * 2 + 1] });
+    }
+}
+
+// Helper to finalize the array
+function flattenAndCenter(triangles) {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    triangles.forEach(p => {
+        if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
+    });
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    
+    const finalData = [];
+    triangles.forEach(p => {
+        finalData.push(p.x - centerX);
+        finalData.push(p.y - centerY);
+        finalData.push(0.0);
+    });
+    return new Float32Array(finalData);
+}
+
+function getContoursFromPath(commands, segmentsPerCurve = 10) {
+    const contours = [];
+    let currentContour = [];
+
+    function addPoint(x, y) {
+        currentContour.push({ x: x, y: y });
     }
 
     commands.forEach(cmd => {
-        if (cmd.type === 'M') { 
-            cursor = { x: cmd.x, y: cmd.y };
-            startOfContour = { x: cmd.x, y: cmd.y };
+        if (cmd.type === 'M') {
+            // If we have an existing contour, save it and start a new one
+            if (currentContour.length > 0) {
+                contours.push(currentContour);
+            }
+            currentContour = [];
+            addPoint(cmd.x, cmd.y);
         } 
         else if (cmd.type === 'L') { 
-            addLineSegment(cursor.x, cursor.y, cmd.x, cmd.y);
-            cursor = { x: cmd.x, y: cmd.y };
+            addPoint(cmd.x, cmd.y);
         } 
         else if (cmd.type === 'C') { 
-            const p0 = { x: cursor.x, y: cursor.y };
+            // Bezier Curve
+            const last = currentContour[currentContour.length - 1];
+            const p0 = { x: last.x, y: last.y };
             const p1 = { x: cmd.x1, y: cmd.y1 };
             const p2 = { x: cmd.x2, y: cmd.y2 };
             const p3 = { x: cmd.x, y: cmd.y };
 
-            let prev = p0;
             for (let t = 1; t <= segmentsPerCurve; t++) {
                 const tt = t / segmentsPerCurve;
                 const mt = 1 - tt;
                 const x = mt * mt * mt * p0.x + 3 * mt * mt * tt * p1.x + 3 * mt * tt * tt * p2.x + tt * tt * tt * p3.x;
                 const y = mt * mt * mt * p0.y + 3 * mt * mt * tt * p1.y + 3 * mt * tt * tt * p2.y + tt * tt * tt * p3.y;
-                
-                addLineSegment(prev.x, prev.y, x, y);
-                prev = { x, y };
+                addPoint(x, y);
             }
-            cursor = { x: p3.x, y: p3.y };
         } 
         else if (cmd.type === 'Q') { 
-            const p0 = { x: cursor.x, y: cursor.y };
+            // Quadratic Curve
+            const last = currentContour[currentContour.length - 1];
+            const p0 = { x: last.x, y: last.y };
             const p1 = { x: cmd.x1, y: cmd.y1 };
             const p2 = { x: cmd.x, y: cmd.y };
 
-            let prev = p0;
             for (let t = 1; t <= segmentsPerCurve; t++) {
                 const tt = t / segmentsPerCurve;
                 const mt = 1 - tt;
                 const x = mt * mt * p0.x + 2 * mt * tt * p1.x + tt * tt * p2.x;
                 const y = mt * mt * p0.y + 2 * mt * tt * p1.y + tt * tt * p2.y;
-
-                addLineSegment(prev.x, prev.y, x, y);
-                prev = { x, y };
+                addPoint(x, y);
             }
-            cursor = { x: p2.x, y: p2.y };
         }
         else if (cmd.type === 'Z') { 
-            addLineSegment(cursor.x, cursor.y, startOfContour.x, startOfContour.y);
-            cursor = { ...startOfContour };
+            // Close Path - usually implied by the loop, but ensures connection
+            // We don't necessarily need to add a point here if the next M handles it
         }
     });
 
-    return points;
+    // Push the final contour if it exists
+    if (currentContour.length > 0) {
+        contours.push(currentContour);
+    }
+
+    return contours;
 }
+
+// ---------------------- EXECUTION ----------------------
 
 // ---------------------- EXECUTION ----------------------
 
@@ -148,47 +213,60 @@ function generateTextVertices(text) {
     if (!text || text.length === 0) return new Float32Array([]);
 
     const fontSize = 100;
-    let combinedPoints = [];
-    let cursorX = 0; // Tracks the horizontal position for the next letter
+    let allTriangles = [];
+    let cursorX = 0; 
 
-    // 1. Loop through each character to build the geometry
     for (let i = 0; i < text.length; i++) {
         const char = text[i];
         const glyph = loadedFont.charToGlyph(char);
-
-        // getPath(x, y, fontSize) - we pass cursorX to shift the letter automatically
         const path = glyph.getPath(cursorX, 0, fontSize);
         
-        // Convert curves to line segments
-        const pts = flattenPathToPoints(path.commands, 10);
-        combinedPoints.push(...pts);
+        // 1. Get all contours (loops of points)
+        // (Make sure you still have the 'getContoursFromPath' function from the previous step)
+        const rawContours = getContoursFromPath(path.commands, 10);
 
-        // Advance the cursor based on the glyph's width
-        // We must scale advanceWidth because it is in font units
+        if (rawContours.length > 0) {
+            // 2. Calculate Area for every contour to determine its type
+            const classified = rawContours.map(points => ({
+                points: points,
+                area: getSignedArea(points)
+            }));
+
+            // 3. Identify the "Solid" winding direction
+            // The largest shape is always a solid (e.g., the main body of the letter)
+            const largest = classified.reduce((a, b) => 
+                Math.abs(b.area) > Math.abs(a.area) ? b : a
+            );
+            const solidSign = Math.sign(largest.area);
+
+            // 4. Group Contours
+            let currentSolid = null;
+            
+            classified.forEach(c => {
+                // If it has the same winding as the largest shape, it's a NEW Solid
+                if (Math.sign(c.area) === solidSign) {
+                    // Process the previous solid if it exists
+                    if (currentSolid) triangulateSolid(currentSolid, allTriangles);
+                    
+                    // Start a new solid
+                    currentSolid = { outer: c.points, holes: [] };
+                } 
+                else {
+                    // If opposite winding, it's a hole for the current solid
+                    if (currentSolid) currentSolid.holes.push(c.points);
+                }
+            });
+            // Don't forget the last one
+            if (currentSolid) triangulateSolid(currentSolid, allTriangles);
+        }
+
         cursorX += glyph.advanceWidth * (fontSize / loadedFont.unitsPerEm);
     }
 
-    if (combinedPoints.length === 0) return new Float32Array([]);
+    if (allTriangles.length === 0) return new Float32Array([]);
 
-    // 2. Calculate Bounding Box to Center the Whole Word
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    combinedPoints.forEach(p => {
-        if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
-        if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
-    });
-
-    const centerX = (minX + maxX) / 2;
-    const centerY = (minY + maxY) / 2;
-
-    // 3. Flatten into Float32Array (x, y, z) and shift to center
-    const flatArray = [];
-    combinedPoints.forEach(p => {
-        flatArray.push(p.x - centerX); 
-        flatArray.push(p.y - centerY); 
-        flatArray.push(0.0);           
-    });
-
-    return new Float32Array(flatArray);
+    // Center and Flatten
+    return flattenAndCenter(allTriangles);
 }
 
 function updateText(text) {
@@ -236,7 +314,7 @@ window.onload = function init() {
         // Check if there is already value in input (e.g. browser refresh)
         let initialText = inputEl.value || "USM"; 
         initialText = initialText.toUpperCase().replace(/[^A-Z]/g, '').substring(0,4);
-        
+
         updateText(initialText);
         
         // Start Render Loop
