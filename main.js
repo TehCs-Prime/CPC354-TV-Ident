@@ -11,8 +11,8 @@ let meshPositions = null;
 let vertexCount = 0;
 
 // Rotation State
-var theta = 0;  // Rotation around Y axis
-var phi = 0;    // Rotation around X axis
+var theta = 35;  // Rotation around Y axis
+var phi = -15;    // Rotation around X axis
 var dr = 5.0 * Math.PI/180.0; // Speed multiplier
 
 // Mouse State
@@ -24,7 +24,12 @@ var lastY = 0;
 var uColorLoc;
 let currentThickness = 20;       // Default thickness
 let currentSpacing = 5;
-let currentUserColor = [0.0, 1.0, 0.0, 1.0]; // Default Green
+let currentUserColor = [0.6039, 0.2314, 0.9098, 1.0]; // Default Green
+// New: Animation State
+let isAnimating = false;
+let rotationSpeed = 1.0;
+
+let isDayMode = false;
 
 // ---------------------------------------------------- WebGL Setup ------------------------------------------------------------
 
@@ -58,6 +63,9 @@ function configureWebGL() {
 
     // Mouse Event Listeners for Rotation
     canvas.addEventListener("mousedown", function(e) {
+        // Disable mouse dragging if animation is running 
+        if (isAnimating) return;
+
         dragging = true;
         lastX = e.clientX;
         lastY = e.clientY;
@@ -106,6 +114,11 @@ function render() {
     
     projectionMatrix = ortho(-width, width, -height, height, -100, 100);
     gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
+
+    // Test first: Auto-Rotate if animation is on
+    if (isAnimating) {
+        theta += rotationSpeed; // Speed of auto-rotation
+    }
 
     // View Matrix
     modelViewMatrix = mat4();
@@ -452,6 +465,86 @@ window.onload = function init() {
         currentSpacing = parseFloat(e.target.value);
         let val = inputEl.value || "USM"; 
         updateText(val);
+    });
+
+    const speedEl = document.getElementById("speedInput");
+    speedEl.addEventListener("input", function(e) {
+        rotationSpeed = parseFloat(e.target.value);
+    });
+
+    // -----------------------------------------------------------------------
+    // UPDATED BUTTON LOGIC
+    // -----------------------------------------------------------------------
+
+    const btnStartStop = document.getElementById("btnStartStop");
+    const btnReset = document.getElementById("btnReset");
+
+    // 1. START / STOP TOGGLE
+    btnStartStop.addEventListener("click", function() {
+        if (!isAnimating) {
+            // Switch to STOP mode
+            isAnimating = true;
+            btnStartStop.innerText = "Stop";
+            btnStartStop.classList.add("stop-active"); // Turn Red
+        } else {
+            // Switch to START mode
+            isAnimating = false;
+            btnStartStop.innerText = "Start";
+            btnStartStop.classList.remove("stop-active"); // Turn Green
+        }
+    });
+
+    // 2. RESET BUTTON
+    btnReset.addEventListener("click", function() {
+        // Reset Animation state
+        isAnimating = false;
+        btnStartStop.innerText = "Start";
+        btnStartStop.classList.remove("stop-active");
+
+        // Reset Rotations
+        theta = 35;
+        phi = -15;
+
+        // Reset Inputs
+        inputEl.value = "USM";
+        thickEl.value = "20";
+        spacingEl.value = "5";
+        colorEl.value = "#9a3be8";
+        speedEl.value = "1.0";
+
+        // Reset Variables
+        currentThickness = 20;
+        currentSpacing = 5;
+        currentUserColor = [0.6039, 0.2314, 0.9098, 1.0];
+        rotationSpeed = 1.0;
+
+        updateText("USM");
+    });
+
+    // 3. DAY / NIGHT TOGGLE
+    const btnDayNight = document.getElementById("btnDayNight");
+
+    btnDayNight.addEventListener("click", function() {
+        isDayMode = !isDayMode; // Toggle boolean
+
+        // --- NEW LINE: Toggle the CSS class ---
+        btnDayNight.classList.toggle("day-active");
+
+        if (isDayMode) {
+            // Day Mode: Light Background (almost white)
+            // gl.clearColor(Red, Green, Blue, Alpha)
+            gl.clearColor(0.9, 0.9, 0.9, 1.0); 
+            
+            // Update Icon to Sun
+            btnDayNight.innerText = "☀️"; 
+
+        } else {
+            // Night Mode: Black Background (Default)
+            gl.clearColor(0.0, 0.0, 0.0, 1.0);
+            
+            // Update Icon to Moon
+            btnDayNight.innerText = "🌙"; 
+        }
     });
 
     opentype.load('fonts/static/Roboto-Medium.ttf', function (err, font) {

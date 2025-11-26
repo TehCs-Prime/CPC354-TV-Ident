@@ -62,3 +62,93 @@ html, body {
     height: 100%;
     display: block;
 }
+
+.canvas-area {
+    position: relative; /* Essential for absolute positioning of children */
+}
+
+.animation-overlay {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent dark background */
+    padding: 10px 20px;
+    border-radius: 30px; /* Highly rounded pill shape */
+    display: flex;
+    gap: 15px;
+    backdrop-filter: blur(10px); /* Frosted glass effect */
+    -webkit-backdrop-filter: blur(10px); /* Safari support */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    z-index: 10;
+}
+
+.anim-btn {
+    background: #444;
+    color: white;
+    border: 1px solid #ffffff20; /* Subtle border */
+    padding: 8px 24px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: 'Roboto', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    min-width: 80px;
+}
+
+.anim-btn:active {
+    transform: scale(0.95);
+}
+
+/* START / STOP BUTTON */
+#btnStartStop {
+    background-color: #2ecc71; /* Green */
+    border-color: #27ae60;
+}
+#btnStartStop:hover { background-color: #27ae60; }
+
+/* State: Stop (Red) - Controlled by JS */
+#btnStartStop.stop-active {
+    background-color: #e74c3c;
+    border-color: #c0392b;
+}
+#btnStartStop.stop-active:hover { background-color: #c0392b; }
+
+/* RESET BUTTON (Icon Style) */
+#btnReset {
+    background-color: #34495e;
+    border-color: #2c3e50;
+    min-width: 44px; /* Override min-width for square shape */
+    width: 44px;
+    padding: 0;      /* Remove side padding to center icon */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 22px; /* Larger icon */
+    border-radius: 50%; /* Make it a perfect circle */
+}
+#btnReset:hover { 
+    background-color: #5d6d7e; 
+}
+
+/* Default Style (Night Mode) */
+#btnDayNight {
+    background-color: #292929; /* Dark Grey */
+    color: white;
+    border: 1px solid #666;
+    transition: background-color 0.3s; /* Smooth color fade */
+}
+
+/* Active Style (Day Mode) */
+#btnDayNight.day-active {
+    background-color: #eebb16; /* Gold / Yellow */
+    color: black; /* Dark text for contrast */
+    border: 1px solid #e6ad00;
+}
+
+/* Optional: Hover effect */
+#btnDayNight:hover {
+    cursor: pointer;
+    opacity: 0.9;
+}

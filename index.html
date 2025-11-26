@@ -48,28 +48,41 @@
   <body>
     <div class="container">
       <div class="canvas-area">
+
         <canvas id="gl-canvas">
           Error: Browser doesn't support HTML5 canvas element
         </canvas>
+        <div class="animation-overlay">
+            <button id="btnStartStop" class="anim-btn" title="Start Animation">Start</button>
+            <button id="btnReset" class="anim-btn mode-reset" title="'Reset">&#x21bb;</button>
+            <button id="btnDayNight" class="anim-btn" title="Day/Night Mode">🌙</button>
+        </div>
+
       </div>
+
       <div class="control-panel">
 
         <h2>Parameter Controls Panel</h2>
 
         <div class="character-input-box" style="margin-top: 10px;">
             <label class='inputPrompt' for="colorInput">Text Color:</label>
-            <input type="color" id="colorInput" value="#00ff00">
+            <input type="color" id="colorInput" value="#9a3be8">
         </div>
 
         <div class="character-input-box" style="margin-top: 10px;">
             <label class='inputPrompt' for="thicknessInput">Thickness:</label>
-            <input type="range" id="thicknessInput" min="1" max="100" value="20">
+            <input type="range" id="thicknessInput" min="1" max="30" value="20">
         </div>
 
         <div class="character-input-box" style="margin-top: 10px;">
             <label class='inputPrompt' for="spacingInput">Letter Spacing:</label>
             <input type="range" id="spacingInput" min="0" max="30" value="5">
         </div>
+
+        <div class="character-input-box" style="margin-top: 10px;">
+          <label class='inputPrompt' for="speedInput">Animation Speed:</label>
+          <input type="range" id="speedInput" min="0.1" max="5.0" step="0.1" value="1.0">
+      </div>
         
         <div class="character-input-box">
           <label class='inputPrompt' for="wordInput">Enter text (Max 4):</label>
