@@ -35,9 +35,18 @@
 
   <body>
     <div class="container">
-        <canvas id="gl-canvas" width="800" height="600">
+      <div class="canvas-area">
+        <canvas id="gl-canvas">
           Error: Browser doesn't support HTML5 canvas element
         </canvas>
+      </div>
+      <div class="control-panel">
+        <h2>Parameter Controls Panel</h2>
+        <div class="character-input-box">
+          <label class='inputPrompt' for="wordInput">Enter text (Max 4):</label>
+          <input type="text" id="wordInput" maxlength="4" placeholder="USM">
+        </div>
+      </div>
     </div>
   </body>
 </html>
