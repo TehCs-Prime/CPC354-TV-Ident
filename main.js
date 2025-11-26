@@ -5,6 +5,8 @@ var posBuffer, vPosition;
 var modelViewMatrixLoc, projectionMatrixLoc;
 var modelViewMatrix, projectionMatrix;
 
+// Global State
+let loadedFont = null; 
 let meshPositions = null; 
 let vertexCount = 0;      
 
@@ -31,12 +33,15 @@ function configureWebGL() {
 
     modelViewMatrixLoc = gl.getUniformLocation(program, 'modelViewMatrix');
     projectionMatrixLoc = gl.getUniformLocation(program, 'projectionMatrix');
+    
+    // Initialize the buffer once here
+    posBuffer = gl.createBuffer();
+    vPosition = gl.getAttribLocation(program, "vPosition");
 }
 
 function render() {
     // If the window is resized, we need to update dimensions and viewport
     if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
-        // Scale by device pixel ratio for super sharp text
         var dpr = window.devicePixelRatio || 1;
         canvas.width = canvas.clientWidth * dpr;
         canvas.height = canvas.clientHeight * dpr;
@@ -46,7 +51,6 @@ function render() {
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     // Basic Orthographic Projection
-    // Use the CURRENT canvas dimensions for aspect ratio
     let aspect = canvas.width / canvas.height;
     let height = 4;
     let width = height * aspect;
@@ -59,17 +63,16 @@ function render() {
     modelViewMatrix = mult(modelViewMatrix, scale(0.02, -0.02, 0.02)); 
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
 
-    if (!meshPositions) return;
+    if (!meshPositions || vertexCount === 0) return;
 
     gl.drawArrays(gl.LINES, 0, vertexCount);
 }
 
-function setupMeshBuffers() {
-    posBuffer = gl.createBuffer();
+function updateBufferData() {
+    // Bind the buffer and send new data
     gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, meshPositions, gl.STATIC_DRAW);
     
-    vPosition = gl.getAttribLocation(program, "vPosition");
     gl.enableVertexAttribArray(vPosition);
     gl.vertexAttribPointer(vPosition, 3, gl.FLOAT, false, 0, 0);
 }
@@ -141,22 +144,45 @@ function flattenPathToPoints(commands, segmentsPerCurve = 10) {
 
 // ---------------------- EXECUTION ----------------------
 
-function processGlyphOutline(font) {
-    const glyph = font.charToGlyph('B');
-    const path = glyph.getPath(0, 0, 100); 
+function generateTextVertices(text) {
+    if (!text || text.length === 0) return new Float32Array([]);
 
-    const polygonPoints = flattenPathToPoints(path.commands, 10);
+    const fontSize = 100;
+    let combinedPoints = [];
+    let cursorX = 0; // Tracks the horizontal position for the next letter
 
+    // 1. Loop through each character to build the geometry
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const glyph = loadedFont.charToGlyph(char);
+
+        // getPath(x, y, fontSize) - we pass cursorX to shift the letter automatically
+        const path = glyph.getPath(cursorX, 0, fontSize);
+        
+        // Convert curves to line segments
+        const pts = flattenPathToPoints(path.commands, 10);
+        combinedPoints.push(...pts);
+
+        // Advance the cursor based on the glyph's width
+        // We must scale advanceWidth because it is in font units
+        cursorX += glyph.advanceWidth * (fontSize / loadedFont.unitsPerEm);
+    }
+
+    if (combinedPoints.length === 0) return new Float32Array([]);
+
+    // 2. Calculate Bounding Box to Center the Whole Word
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    polygonPoints.forEach(p => {
+    combinedPoints.forEach(p => {
         if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
         if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
     });
+
     const centerX = (minX + maxX) / 2;
     const centerY = (minY + maxY) / 2;
 
+    // 3. Flatten into Float32Array (x, y, z) and shift to center
     const flatArray = [];
-    polygonPoints.forEach(p => {
+    combinedPoints.forEach(p => {
         flatArray.push(p.x - centerX); 
         flatArray.push(p.y - centerY); 
         flatArray.push(0.0);           
@@ -165,9 +191,38 @@ function processGlyphOutline(font) {
     return new Float32Array(flatArray);
 }
 
+function updateText(text) {
+    if (!loadedFont) return;
+    
+    // Regenerate mesh based on new text
+    meshPositions = generateTextVertices(text);
+    vertexCount = meshPositions.length / 3;
+
+    // Send new data to GPU
+    updateBufferData();
+}
+
 window.onload = function init() {
     getUIElement();
     configureWebGL();
+
+    // Setup Input Listener
+    const inputEl = document.getElementById("wordInput");
+    inputEl.addEventListener("input", function(e) {
+        // Enforce max length of 4 just in case
+        let val = e.target.value;
+
+        // Uppercase and only Alphabetic
+        val = val.toUpperCase();
+        val = val.replace(/[^A-Z]/g, '');
+
+        if (val.length > 4) val = val.substring(0, 4);
+        
+        // Update the input field so the user sees the filtered result
+        e.target.value = val;
+
+        updateText(val);
+    });
 
     opentype.load('fonts/static/Roboto-Medium.ttf', function (err, font) {
         if (err) {
@@ -175,12 +230,16 @@ window.onload = function init() {
             return;
         }
 
-        meshPositions = processGlyphOutline(font);
-        vertexCount = meshPositions.length / 3;
+        loadedFont = font; // Store globally
 
-        setupMeshBuffers();
+        // Initialize with default text (empty or placeholder)
+        // Check if there is already value in input (e.g. browser refresh)
+        let initialText = inputEl.value || "USM"; 
+        initialText = initialText.toUpperCase().replace(/[^A-Z]/g, '').substring(0,4);
         
-        // Use requestAnimationFrame loop for smoother updates
+        updateText(initialText);
+        
+        // Start Render Loop
         function tick() {
             render();
             requestAnimationFrame(tick);
