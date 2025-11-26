@@ -13,27 +13,27 @@
       uniform mat4 modelViewMatrix;
 
       // Input Position/Color variable from application
-      attribute vec4 vPosition;
-      attribute vec4 vColor;
+      attribute vec3 vPosition;
+      attribute vec3 vNormal;
 
       // Varying data to pass to fragment shader
-      varying vec4 fColor;
+      varying vec3 fNormal;
 
       void main()
       {
-        gl_Position = projectionMatrix * modelViewMatrix * vPosition;
-        fColor = vColor;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(vPosition, 1.0);
+        fNormal = normalize((modelViewMatrix * vec4(vNormal, 0.0)).xyz);
       }
     </script>
 
     <!-- Fragement Shader -->
     <script id="fragment-shader" type="x-shader/x-fragment">
       precision mediump float;
-      varying vec4 fColor;
+      varying vec3 fNormal;
 
       void main()
       {
-        gl_FragColor = fColor;
+        gl_FragColor = vec4(1.0, 0.8, 0.6, 1.0);
       }
     </script>
 
@@ -41,6 +41,8 @@
     <script type="text/javascript" src="/Common/initShaders.js"></script>
     <script type="text/javascript" src="/Common/MV.js"></script>
     <script type="text/javascript" src="/Common/webgl-utils.js"></script>
+    <script src="https://unpkg.com/opentype.js@latest/dist/opentype.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/earcut@2.2.4/dist/earcut.min.js"></script>
     <script type="text/javascript" src="/main.js"></script>
     <link rel="stylesheet" type="text/css" href="style.css">
 
