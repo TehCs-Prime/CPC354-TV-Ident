@@ -21,6 +21,8 @@
       precision mediump float;
       varying float vDepth;
 
+      uniform vec4 uColor;
+
       void main() {
         // Simple fake shading: 
         // Front face (positive Z) is bright, back/sides are darker
@@ -28,7 +30,7 @@
         if (brightness > 1.0) brightness = 1.0;
         if (brightness < 0.2) brightness = 0.2;
         
-        gl_FragColor = vec4(0.0, brightness, 0.0, 1.0);
+        gl_FragColor = vec4(uColor.rgb * brightness, uColor.a);
       }
     </script>
 
@@ -51,11 +53,29 @@
         </canvas>
       </div>
       <div class="control-panel">
+
         <h2>Parameter Controls Panel</h2>
+
+        <div class="character-input-box" style="margin-top: 10px;">
+            <label class='inputPrompt' for="colorInput">Text Color:</label>
+            <input type="color" id="colorInput" value="#00ff00">
+        </div>
+
+        <div class="character-input-box" style="margin-top: 10px;">
+            <label class='inputPrompt' for="thicknessInput">Thickness:</label>
+            <input type="range" id="thicknessInput" min="1" max="100" value="20">
+        </div>
+
+        <div class="character-input-box" style="margin-top: 10px;">
+            <label class='inputPrompt' for="spacingInput">Letter Spacing:</label>
+            <input type="range" id="spacingInput" min="0" max="30" value="5">
+        </div>
+        
         <div class="character-input-box">
           <label class='inputPrompt' for="wordInput">Enter text (Max 4):</label>
           <input type="text" id="wordInput" maxlength="4" placeholder="USM">
         </div>
+
       </div>
     </div>
   </body>

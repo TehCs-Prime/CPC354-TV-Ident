@@ -20,6 +20,12 @@ var dragging = false;
 var lastX = 0;
 var lastY = 0;
 
+// User Customizable State
+var uColorLoc;
+let currentThickness = 20;       // Default thickness
+let currentSpacing = 5;
+let currentUserColor = [0.0, 1.0, 0.0, 1.0]; // Default Green
+
 // ---------------------------------------------------- WebGL Setup ------------------------------------------------------------
 
 function getUIElement() {
@@ -44,6 +50,8 @@ function configureWebGL() {
     modelViewMatrixLoc = gl.getUniformLocation(program, 'modelViewMatrix');
     projectionMatrixLoc = gl.getUniformLocation(program, 'projectionMatrix');
     
+    uColorLoc = gl.getUniformLocation(program, 'uColor');
+
     // Initialize the buffer once here
     posBuffer = gl.createBuffer();
     vPosition = gl.getAttribLocation(program, "vPosition");
@@ -76,9 +84,6 @@ function configureWebGL() {
         lastX = x;
         lastY = y;
         
-        // Optional: Limit vertical rotation so it doesn't flip upside down
-        // if (phi > 90) phi = 90;
-        // if (phi < -90) phi = -90;
     });
 }
 
@@ -99,7 +104,7 @@ function render() {
     let height = 4;
     let width = height * aspect;
     
-    projectionMatrix = ortho(-width, width, -height, height, -10, 10);
+    projectionMatrix = ortho(-width, width, -height, height, -100, 100);
     gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
 
     // View Matrix
@@ -113,6 +118,9 @@ function render() {
 
     modelViewMatrix = mult(modelViewMatrix, scale(0.02, -0.02, 0.02)); 
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
+
+    // Do not use flatten() might behave unexpectedly with a simple 1D color array. Use Float32Array directly.
+    gl.uniform4fv(uColorLoc, new Float32Array(currentUserColor));
 
     if (!meshPositions || vertexCount === 0) return;
 
@@ -297,13 +305,33 @@ function addSideWalls(contour, zFront, zBack, targetArray) {
     }
 }
 
+// Helper to convert Hex to RGBA array
+function hexToRgbA(hex){
+    var c;
+    if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
+        c= hex.substring(1).split('');
+        if(c.length== 3){
+            c= [c[0], c[0], c[1], c[1], c[2], c[2]];
+        }
+        c= '0x'+c.join('');
+        // Return as 0-1 range array [r, g, b, a]
+        return [
+            ((c>>16)&255)/255, 
+            ((c>>8)&255)/255, 
+            (c&255)/255, 
+            1.0
+        ];
+    }
+    return [0.0, 1.0, 0.0, 1.0]; // Default green
+}
+
 // ---------------------- EXECUTION ----------------------
 
 function generateTextVertices(text) {
     if (!text || text.length === 0) return new Float32Array([]);
 
     const fontSize = 100;
-    const thickness = 20; // How deep the 3D text is
+    const thickness = currentThickness;
     const frontZ = thickness / 2;
     const backZ = -thickness / 2;
 
@@ -363,7 +391,7 @@ function generateTextVertices(text) {
             if (currentSolid) processSolid(currentSolid);
         }
 
-        cursorX += glyph.advanceWidth * (fontSize / loadedFont.unitsPerEm);
+        cursorX += glyph.advanceWidth * (fontSize / loadedFont.unitsPerEm)+currentSpacing;
     }
 
     if (allTriangles.length === 0) return new Float32Array([]);
@@ -404,6 +432,28 @@ window.onload = function init() {
         updateText(val);
     });
 
+    // THICKNESS Input Listener
+    const thickEl = document.getElementById("thicknessInput");
+    thickEl.addEventListener("input", function(e) {
+        currentThickness = parseFloat(e.target.value);
+        // We must regenerate the mesh when thickness changes
+        let val = inputEl.value || "USM"; 
+        updateText(val);
+    });
+
+    const colorEl = document.getElementById("colorInput");
+    colorEl.addEventListener("input", function(e) {
+        // Convert the hex color from the picker to RGBA for WebGL
+        currentUserColor = hexToRgbA(e.target.value);
+    });
+
+    const spacingEl = document.getElementById("spacingInput");
+    spacingEl.addEventListener("input", function(e) {
+        currentSpacing = parseFloat(e.target.value);
+        let val = inputEl.value || "USM"; 
+        updateText(val);
+    });
+
     opentype.load('fonts/static/Roboto-Medium.ttf', function (err, font) {
         if (err) {
             console.error('Font load error:', err);
@@ -416,6 +466,11 @@ window.onload = function init() {
         // Check if there is already value in input (e.g. browser refresh)
         let initialText = inputEl.value || "USM"; 
         initialText = initialText.toUpperCase().replace(/[^A-Z]/g, '').substring(0,4);
+
+        // Load initial color/thickness values from DOM
+        currentUserColor = hexToRgbA(colorEl.value);
+        currentThickness = parseFloat(thickEl.value);
+        currentSpacing = parseFloat(spacingEl.value);
 
         updateText(initialText);
         
