@@ -106,6 +106,9 @@ function initUIHandlers() {
         btnStartStop.innerText = "Start";
         btnStartStop.classList.remove("stop-active");
 
+        // Reset Animation Phase
+        currentPhase = 0;
+
         // Reset Rotations
         theta = 35;
         phi = -15;
@@ -129,6 +132,7 @@ function initUIHandlers() {
         currentSpacing = 5;
         currentUserColor = [0.6039, 0.2314, 0.9098, 1.0];
         rotationSpeed = 1.0;
+        scaleFactor = 0.02;
 
         updateText("USM");
     });
