@@ -1,23 +1,71 @@
 // ---------------------- Animation Loop & State Updates ----------------------
 
 function updateAnimationState() {
-    // Only move if animation is active
     if (isAnimating) {
-        // 1. Update Rotation
-        theta += rotationSpeed; 
+        switch (currentPhase) {
+            case 0: // Rotate right by 180 degrees
+                if (theta < 215) { // 35 + 180 = 215
+                    theta += rotationSpeed; // Adjust speed as needed
+                } else {
+                    theta = 215;
+                    currentPhase++;
+                }
+                break;
 
-        // 2. Update Position (Translation)
-        transX += velX;
-        transY += velY;
+            case 1: // Rotate back to original
+                if (theta > 35) {
+                    theta -= rotationSpeed;
+                } else {
+                    theta = 35;
+                    currentPhase++;
+                }
+                break;
 
-        // 3. Bounce Logic (Check Walls)
-        // If we hit Right or Left wall
-        if (transX > boundaryX || transX < -boundaryX) {
-            velX = -velX; // Reverse direction
-        }
-        // If we hit Top or Bottom wall
-        if (transY > boundaryY || transY < -boundaryY) {
-            velY = -velY; // Reverse direction
+            case 2: // Rotate left by 180 degrees
+                if (theta > -145) { // 35 - 180 = -145
+                    theta -= rotationSpeed;
+                } else {
+                    theta = -145;
+                    currentPhase++;
+                }
+                break;
+
+            case 3: // Rotate back to original
+                if (theta < 35) {
+                    theta += rotationSpeed;
+                } else {
+                    theta = 35;
+                    currentPhase++;
+                }
+                break;
+
+            case 4: // Gradually enlarge
+                if (scaleFactor < 0.2) { // Full-screen scale, adjust as needed
+                    scaleFactor += scaleStep;
+                } else {
+                    scaleFactor = 0.2;
+                    currentPhase++;
+                }
+                break;
+
+            case 5: // Move about 
+                // Update Rotation
+                theta += rotationSpeed;
+
+                // Update Position (Translation)
+                transX += velX;
+                transY += velY;
+
+                // Bounce Logic (Check Walls)
+                // If we hit Right or Left wall
+                if (transX > boundaryX || transX < -boundaryX) {
+                    velX = -velX;   // Reverse direction
+                }
+                // If we hit Top or Bottom wall
+                if (transY > boundaryY || transY < -boundaryY) {
+                    velY = -velY;   // Reverse direction
+                }
+                break;
         }
     }
 }
@@ -34,7 +82,7 @@ function calculateModelViewMatrix() {
     mv = mult(mv, rotate(theta, [0, 1, 0]));
 
     // 3. Apply Scale
-    mv = mult(mv, scale(0.02, -0.02, 0.02)); 
+    mv = mult(mv, scale(scaleFactor, -scaleFactor, scaleFactor)); 
 
     return mv;
 }

@@ -33,6 +33,10 @@ var dragging = false;
 var lastX = 0;
 var lastY = 0;
 
+// Scale State
+var scaleFactor = 0.02;
+var scaleStep = 0.0001;
+
 // User Customizable State
 var uColorLoc;
 let currentThickness = 20;       // Default thickness
@@ -40,6 +44,7 @@ let currentSpacing = 5;
 let currentUserColor = [0.6039, 0.2314, 0.9098, 1.0]; // Default Green
 
 // Animation State
+let currentPhase = 0;
 let isAnimating = false;
 let rotationSpeed = 1.0;
 
