@@ -40,10 +40,10 @@ function updateAnimationState() {
                 break;
 
             case 4: // Gradually enlarge
-                if (scaleFactor < 0.2) { // Full-screen scale, adjust as needed
+                if (scaleFactor < 0.05) {
                     scaleFactor += scaleStep;
                 } else {
-                    scaleFactor = 0.2;
+                    scaleFactor = 0.05;
                     currentPhase++;
                 }
                 break;
@@ -82,7 +82,7 @@ function calculateModelViewMatrix() {
     mv = mult(mv, rotate(theta, [0, 1, 0]));
 
     // 3. Apply Scale
-    mv = mult(mv, scale(scaleFactor, -scaleFactor, scaleFactor)); 
+    mv = mult(mv, scale(scaleFactor, -scaleFactor, scaleFactor));
 
     return mv;
 }
