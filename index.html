@@ -68,34 +68,63 @@
 
       <div class="control-panel">
 
-        <h2>Parameter Controls Panel</h2>
-
-        <div class="character-input-box" style="margin-top: 10px;">
-            <label class='inputPrompt' for="colorInput">Text Color:</label>
-            <input type="color" id="colorInput" value="#9a3be8">
+        <div class="panel-header">
+          <h2>Control Panel</h2>
+          <div class="panel-subtitle">TV Ident Configuration</div>
         </div>
 
-        <div class="character-input-box" style="margin-top: 10px;">
-            <label class='inputPrompt' for="thicknessInput">Thickness:</label>
-            <input type="range" id="thicknessInput" min="1" max="30" value="20">
-        </div>
+        <div class="panel-body">
+          
+          <div class="control-group">
+            <label class="group-label">Display Text</label>
+            <div class="input-wrapper text-wrapper">
+              <input type="text" id="wordInput" maxlength="4" placeholder="USM" autocomplete="off">
+              <span class="input-focus-border"></span>
+            </div>
+          </div>
 
-        <div class="character-input-box" style="margin-top: 10px;">
-            <label class='inputPrompt' for="spacingInput">Letter Spacing:</label>
-            <input type="range" id="spacingInput" min="0" max="30" value="5">
-        </div>
+          <div class="control-group">
+            <label class="group-label">Appearance</label>
+            
+            <div class="control-row">
+              <label for="colorInput">Theme Color</label>
+              <div class="color-wrapper">
+                <input type="color" id="colorInput" value="#9a3be8">
+              </div>
+            </div>
 
-        <div class="character-input-box" style="margin-top: 10px;">
-          <label class='inputPrompt' for="speedInput">Animation Speed:</label>
-          <input type="range" id="speedInput" min="0.1" max="5.0" step="0.1" value="1.0">
+            <div class="control-row">
+              <div class="label-row">
+                <label for="thicknessInput">Extrusion Depth</label>
+                <span class="val-readout" id="val-thick">20</span>
+              </div>
+              <input type="range" class="custom-range" id="thicknessInput" min="1" max="30" value="20" oninput="document.getElementById('val-thick').innerText = this.value">
+            </div>
+
+            <div class="control-row">
+              <div class="label-row">
+                <label for="spacingInput">Letter Spacing</label>
+                <span class="val-readout" id="val-space">5</span>
+              </div>
+              <input type="range" class="custom-range" id="spacingInput" min="0" max="30" value="5" oninput="document.getElementById('val-space').innerText = this.value">
+            </div>
+          </div>
+
+          
+          <div class="control-group">
+            <label class="group-label">Animation</label>
+            <div class="control-row">
+              <div class="label-row">
+                <label for="speedInput">Playback Speed</label>
+                <span class="val-readout" id="val-speed">1.0x</span>
+              </div>
+              <input type="range" class="custom-range" id="speedInput" min="0.1" max="5.0" step="0.1" value="1.0" oninput="document.getElementById('val-speed').innerText = this.value + 'x'">
+            </div>
+          </div>
+
+        </div>
       </div>
-        
-        <div class="character-input-box">
-          <label class='inputPrompt' for="wordInput">Enter text (Max 4):</label>
-          <input type="text" id="wordInput" maxlength="4" placeholder="USM">
-        </div>
 
-      </div>
     </div>
   </body>
 </html>

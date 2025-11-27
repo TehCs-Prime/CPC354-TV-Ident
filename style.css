@@ -13,47 +13,175 @@ html, body {
     height: 100vh;
 }
 
-/* LHS- Canvas display area */
-.canvas-area {
-    flex: 3.5;
-    display: flex;
-    width: 100%;
-    height: 100%;
-    background: #111;
-}
-
 /* RHS - Control Panel */
 .control-panel {
     flex: 1;
-    background: #1e1e1e;
-    color: white;
-    padding: 20px;
-    font-family: Arial, sans-serif;
-    border-left: 2px solid #333;
+    min-width: 300px;
+    background-color: #181818;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    border-left: 1px solid #333;
     display: flex;
     flex-direction: column;
+    box-shadow: -5px 0 15px rgba(0,0,0,0.3);
+    z-index: 20;
 }
 
-/* Place character input box to the end of RHS */
-.character-input-box {
-    margin-top: auto;
-    padding-top: 20px;
-    border-top: 1px solid #444;
+/* Header Styling */
+.panel-header {
+    padding: 25px 20px;
+    background: #121212;
+    border-bottom: 1px solid #333;
 }
 
-.inputPrompt {
+.control-panel h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    color: #cfcfcf;
+}
+
+.panel-subtitle {
+    font-size: 12px;
+    color: #888;
+    margin-top: 5px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Scrollable for controls */
+.panel-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+/* Groupings */
+.control-group {
+    margin-bottom: 30px;
+    background: #252525;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #333;
+}
+
+.group-label {
     display: block;
-    margin-bottom: 10px;
+    font-size: 16px;
+    color: #a12d2d;
+    font-weight: bold;
+    margin-bottom: 15px;
+    letter-spacing: 1px;
+}
+
+/* Rows within groups */
+.control-row {
+    margin-bottom: 15px;
+}
+
+.control-row:last-child {
+    margin-bottom: 0;
+}
+
+.label-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.control-row label {
+    font-size: 12px;
+    color: #ccc;
+}
+
+.val-readout {
+    font-size: 12px;
+    color: #3be86f;
+    font-family: monospace;
+}
+
+/* --- CUSTOM RANGE SLIDER STYLING --- */
+input[type=range].custom-range {
+    -webkit-appearance: none; /* Hides the slider to use custom slider */
+    width: 100%; 
+    background: transparent; 
+}
+
+input[type=range].custom-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    background: #9b9292;
+    cursor: pointer;
+    margin-top: -6px; 
+    box-shadow: 0 0 5px rgba(0,0,0,0.5);
+    transition: transform 0.1s;
+}
+
+input[type=range].custom-range::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    background: #bb3d3d;
+}
+
+input[type=range].custom-range::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 4px;
+    cursor: pointer;
+    background: #444;
+    border-radius: 2px;
+}
+
+/* --- TEXT INPUT STYLING --- */
+.text-wrapper {
+    position: relative;
 }
 
 #wordInput {
-    width: 90%;
-    padding: 8px;
-    font-size: 16px;
+    width: 100%;
+    background-color: #1a1a1a;
+    border: 2px solid #444;
+    color: #fff;
+    padding: 12px;
+    font-size: 24px;
     font-weight: bold;
-    letter-spacing: 2px;
-    text-transform: uppercase; 
-    /* Transform to Uppercase */
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.3s;
+    box-sizing: border-box;
+}
+
+#wordInput:focus {
+    border-color: #b54b4b;
+    box-shadow: 0 0 10px rgba(154, 59, 232, 0.2);
+}
+
+#wordInput::placeholder {
+    color: #444;
+}
+
+.color-wrapper {
+    width: 100%;
+    height: 35px;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid #444;
+    cursor: pointer;
+}
+
+input[type="color"] {
+    -webkit-appearance: none;
+    border: none;
+    width: 120%; 
+    height: 150%;
+    margin: -5% -10%; 
+    padding: 0;
+    background: none;
+    cursor: pointer;
 }
 
 /* Occupied whole left hand side */
@@ -103,7 +231,7 @@ html, body {
 
 /* START / STOP BUTTON */
 #btnStartStop {
-    background-color: #2ecc71; /* Green */
+    background-color: #1d894a; /* Green */
     border-color: #27ae60;
 }
 #btnStartStop:hover { background-color: #27ae60; }
