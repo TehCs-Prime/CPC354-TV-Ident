@@ -1,4 +1,4 @@
-// Helper to convert Hex to RGBA array
+//function to convert Hex to RGBA array
 function hexToRgbA(hex){
     var c;
     if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
@@ -18,58 +18,60 @@ function hexToRgbA(hex){
     return [0.0, 1.0, 0.0, 1.0]; // Default green
 }
 
+//function to handle all UI controls(text, sliders, buttons)
 function initUIHandlers() {
-    // Setup Input Listener
+    //handle text input
     const inputEl = document.getElementById("wordInput");
     inputEl.addEventListener("input", function(e) {
-        // Enforce max length of 4 just in case
+        //set max length of input string as 4
         let val = e.target.value;
 
-        // Uppercase and only Alphabetic
+        //capitalize alphabets
         val = val.toUpperCase();
         val = val.replace(/[^A-Z]/g, '');
 
         if (val.length > 4) val = val.substring(0, 4);
         
-        // Update the input field so the user sees the filtered result
+        //update the input field
         e.target.value = val;
 
         updateText(val);
     });
 
-    // THICKNESS Input Listener
+    //handle thickness slider
     const thickEl = document.getElementById("thicknessInput");
     thickEl.addEventListener("input", function(e) {
         currentThickness = parseFloat(e.target.value);
-        // We must regenerate the mesh when thickness changes
+        //regenerate the mesh when thickness changes
         let val = inputEl.value || "USM"; 
         updateText(val);
     });
 
+    //color picker
     const colorEl = document.getElementById("colorInput");
     colorEl.addEventListener("input", function(e) {
         // Convert the hex color from the picker to RGBA for WebGL
         currentUserColor = hexToRgbA(e.target.value);
     });
 
+    //handle spacing slider
     const spacingEl = document.getElementById("spacingInput");
     spacingEl.addEventListener("input", function(e) {
         currentSpacing = parseFloat(e.target.value);
+        //regenerate the mesh based on the adjusted spacing
         let val = inputEl.value || "USM"; 
         updateText(val);
     });
 
+    //handle speed slider
     const speedEl = document.getElementById("speedInput");
     speedEl.addEventListener("input", function(e) {
+        //update the rotation speed
         let val = parseFloat(e.target.value);
         
-        // 1. Update Rotation Speed
         rotationSpeed = val;
 
-        // 2. Update Translation Speed
-        // We preserve the current direction (Math.sign) but update the speed magnitude
-        // Base speeds: X = 0.04, Y = 0.03 (when slider is 1.0)
-        
+        //update translation speed
         let signX = (velX !== 0) ? Math.sign(velX) : 1;
         let signY = (velY !== 0) ? Math.sign(velY) : 1;
 
@@ -77,57 +79,56 @@ function initUIHandlers() {
         velY = signY * (val * 0.03);
     });
 
-    // -----------------------------------------------------------------------
-    // UPDATED BUTTON LOGIC
-    // -----------------------------------------------------------------------
 
+    //define start and reset button
     const btnStartStop = document.getElementById("btnStartStop");
     const btnReset = document.getElementById("btnReset");
 
-    // 1. START / STOP TOGGLE
+
+    //handle start and stop button
     btnStartStop.addEventListener("click", function() {
         if (!isAnimating) {
-            // Switch to STOP mode
+            //start the animation
             isAnimating = true;
             btnStartStop.innerText = "Stop";
             btnStartStop.classList.add("stop-active"); // Turn Red
         } else {
-            // Switch to START mode
+            //stop the animation
             isAnimating = false;
             btnStartStop.innerText = "Start";
             btnStartStop.classList.remove("stop-active"); // Turn Green
         }
     });
 
-    // 2. RESET BUTTON
+    //reset everything to defaults
     btnReset.addEventListener("click", function() {
-        // Reset Animation state
+        //reset animation state
         isAnimating = false;
         btnStartStop.innerText = "Start";
         btnStartStop.classList.remove("stop-active");
 
-        // Reset Animation Phase
+        //reset animation phase
         currentPhase = 0;
 
-        // Reset Rotations
+        //reset rotation
         theta = 35;
         phi = -15;
 
-        // Reset Position & Velocity
+        //reset position and translation speed
         transX = 0;
         transY = 0;
         transZ = 0;
         velX = 0.04;
         velY = 0.03;
 
-        // Reset Inputs
+        //reset inputs
         inputEl.value = "USM";
         thickEl.value = "20";
         spacingEl.value = "5";
         colorEl.value = "#9a3be8";
         speedEl.value = "1.0";
 
-        // Reset Variables
+        //reset variables
         currentThickness = 20;
         currentSpacing = 5;
         currentUserColor = [0.6039, 0.2314, 0.9098, 1.0];
@@ -137,28 +138,27 @@ function initUIHandlers() {
         updateText("USM");
     });
 
-    // 3. DAY / NIGHT TOGGLE
+    //function to switch between bright and dark background
     const btnDayNight = document.getElementById("btnDayNight");
 
     btnDayNight.addEventListener("click", function() {
         isDayMode = !isDayMode; // Toggle boolean
 
-        // --- NEW LINE: Toggle the CSS class ---
+        //toggle the update of the button
         btnDayNight.classList.toggle("day-active");
 
         if (isDayMode) {
-            // Day Mode: Light Background (almost white)
-            // gl.clearColor(Red, Green, Blue, Alpha)
+            //Light Background
             gl.clearColor(0.9, 0.9, 0.9, 1.0); 
             
-            // Update Icon to Sun
+            //update the button to sun icon
             btnDayNight.innerText = "☀️"; 
 
         } else {
-            // Night Mode: Black Background (Default)
+            //Black Background
             gl.clearColor(0.0, 0.0, 0.0, 1.0);
             
-            // Update Icon to Moon
+            //update icon to moon
             btnDayNight.innerText = "🌙"; 
         }
     });

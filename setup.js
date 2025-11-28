@@ -1,5 +1,4 @@
-// ---------------------------------------------------- WebGL Setup ------------------------------------------------------------
-
+//function to get canvas and UI controls
 function getUIElement() {
     canvas = document.getElementById("gl-canvas");
     inputEl = document.getElementById("wordInput");
@@ -9,34 +8,38 @@ function getUIElement() {
     speedEl = document.getElementById("speedInput");
 }
 
-
+//function to initialize WebGL, shaders, buffers and mouse handlers
 function configureWebGL() {
     gl = WebGLUtils.setupWebGL(canvas);
     if (!gl) { alert("Error No WebGl setup."); }
 
-    // Scale by device pixel ratio for super sharp text
+    //scale by device pixel ratio for sharper rendering
     var dpr = window.devicePixelRatio || 1;
     canvas.width = canvas.clientWidth * dpr;
     canvas.height = canvas.clientHeight * dpr;
 
+    //define the viewport and clear color
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.clearColor(0, 0, 0, 1);
 
+    //complie and use shader program
     program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(program);
 
+    //create uniform location for matrices and color
     modelViewMatrixLoc = gl.getUniformLocation(program, 'modelViewMatrix');
     projectionMatrixLoc = gl.getUniformLocation(program, 'projectionMatrix');
     
     uColorLoc = gl.getUniformLocation(program, 'uColor');
 
-    // Initialize the buffer once here
+    //create position buffer
     posBuffer = gl.createBuffer();
+    //get attribute location
     vPosition = gl.getAttribLocation(program, "vPosition");
 
-    // Mouse Event Listeners for Rotation
+    //mouse drag to rotate
     canvas.addEventListener("mousedown", function(e) {
-        // Disable mouse dragging if animation is running 
+        //diable while animating
         if (isAnimating) return;
 
         dragging = true;
@@ -54,12 +57,12 @@ function configureWebGL() {
         var x = e.clientX;
         var y = e.clientY;
         
-        // Calculate change in position
+        //calculate change in position
         var deltaX = x - lastX;
         var deltaY = y - lastY;
 
-        // Update rotation angles based on movement
-        theta += deltaX * 0.5; // 0.5 is sensitivity
+        //update rotation angles based on movement
+        theta += deltaX * 0.5;
         phi   += deltaY * 0.5;
 
         lastX = x;
@@ -68,8 +71,9 @@ function configureWebGL() {
     });
 }
 
+//function to draw the frames
 function render() {
-    // If the window is resized, we need to update dimensions and viewport
+    //update canvas size and viewport when window is resized
     if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
         var dpr = window.devicePixelRatio || 1;
         canvas.width = canvas.clientWidth * dpr;
@@ -80,24 +84,24 @@ function render() {
     gl.enable(gl.DEPTH_TEST);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    // Basic Orthographic Projection
+    //build orthographic projection
     let aspect = canvas.width / canvas.height;
     let height = 4;
     let width = height * aspect;
     
-    // Update global boundaryX based on current aspect ratio so it bounces at the edge of screen
-    boundaryX = width - 1.0; // Subtract padding
+    //update horizontal bounce boundary
+    boundaryX = width - 1.0; 
 
     projectionMatrix = ortho(-width, width, -height, height, -100, 100);
     gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
 
-   // --- UPDATED: Use helper from animations.js ---
+   //get model-view from animation helper (translate + rotate + scale)
     modelViewMatrix = calculateModelViewMatrix();
 
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
     
 
-    // Do not use flatten() might behave unexpectedly with a simple 1D color array. Use Float32Array directly.
+    //set solid color(RGBA) for fragment shader
     gl.uniform4fv(uColorLoc, new Float32Array(currentUserColor));
 
     if (!meshPositions || vertexCount === 0) return;
@@ -105,6 +109,7 @@ function render() {
     gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
 }
 
+//function to upload vertex data to GPU
 function updateBufferData() {
     // Bind the buffer and send new data
     gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);

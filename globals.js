@@ -1,4 +1,3 @@
-// ---------------------------------------------------- Variables ------------------------------------------------------------
 
 var canvas, gl, program;
 var inputEl, colorEl, thickEl, spacingEl, speedEl;
