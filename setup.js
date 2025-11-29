@@ -13,7 +13,7 @@ function configureWebGL() {
     gl = WebGLUtils.setupWebGL(canvas);
     if (!gl) { alert("Error No WebGl setup."); }
 
-    //scale by device pixel ratio for sharper rendering on window resizing that is repeated in every rendering
+    //scale by device pixel ratio for sharper rendering on window resizing that is repeated in every rendering, once here
     var dpr = window.devicePixelRatio || 1;
     canvas.width = canvas.clientWidth * dpr;
     canvas.height = canvas.clientHeight * dpr;
