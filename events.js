@@ -15,7 +15,7 @@ function hexToRgbA(hex){
             1.0
         ];
     }
-    return [0.0, 1.0, 0.0, 1.0]; // Default green
+    return [0.0, 1.0, 0.0, 1.0]; // Default color
 }
 
 //function to handle all UI controls(text, sliders, buttons)

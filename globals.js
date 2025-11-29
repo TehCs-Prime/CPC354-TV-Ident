@@ -40,7 +40,7 @@ var scaleStep = 0.0001;
 var uColorLoc;
 let currentThickness = 20;       // Default thickness
 let currentSpacing = 5;
-let currentUserColor = [0.6039, 0.2314, 0.9098, 1.0]; // Default Green
+let currentUserColor = [0.6039, 0.2314, 0.9098, 1.0]; // Default color
 
 // Animation State
 let currentPhase = 0;

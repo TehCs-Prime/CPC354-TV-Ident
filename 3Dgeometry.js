@@ -1,5 +1,6 @@
 //function to compute the signed area of 2D polygon
 function getSignedArea(points) {
+    // Shoelace formula only 
     let area = 0;
     for (let i = 0; i < points.length; i++) {
         let j = (i + 1) % points.length;
@@ -13,6 +14,9 @@ function triangulateSolid(solid, z, targetArray, reverseWinding = false) {
     const flatCoords = [];
     const holeIndices = [];
     let indexOffset = 0;
+
+    // we alrd know this solid face is hole/solid by the time we pass solid parameter
+    // it is defined in the main function in generateTextVertices()
 
     //add outer ring
     solid.outer.forEach(p => {
@@ -66,7 +70,7 @@ function flattenAndCenter(triangles) {
     const centerY = (minY + maxY) / 2;
     const centerZ = (minZ + maxZ) / 2;
     
-    //subtract the center from every point (so that it rotates around the middle)
+    //subtract the center from every point (so that it all transformation is around the center)
     const finalData = [];
     triangles.forEach(p => {
         finalData.push(p.x - centerX);
@@ -74,21 +78,25 @@ function flattenAndCenter(triangles) {
         finalData.push(p.z - centerZ); 
     });
     
+    //return a WebGL friendly form
     return new Float32Array(finalData);
 }
 
 //function to build the side walls
 //create a rectangle (using 2 triangles) for each edge in the outline
 function addSideWalls(contour, zFront, zBack, targetArray) {
+    // loop through every contour edge
     const len = contour.length;
     for (let i = 0; i < len; i++) {
         let curr = contour[i];
         let next = contour[(i + 1) % len]; 
         
+        // first triangle
         targetArray.push({ x: curr.x, y: curr.y, z: zFront });
         targetArray.push({ x: next.x, y: next.y, z: zFront });
         targetArray.push({ x: curr.x, y: curr.y, z: zBack });
 
+        // second triangle
         targetArray.push({ x: next.x, y: next.y, z: zBack });
         targetArray.push({ x: curr.x, y: curr.y, z: zBack });
         targetArray.push({ x: next.x, y: next.y, z: zFront }); 

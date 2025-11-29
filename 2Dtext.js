@@ -89,12 +89,16 @@ function generateTextVertices(text) {
     // track the position of the next character
     let cursorX = 0; 
 
+    // for every chatacter input from user
     for (let i = 0; i < text.length; i++) {
         const char = text[i];
         const glyph = loadedFont.charToGlyph(char);
 
         //get the raw vector path(M/L/C/Q commands) for glyph at cursorX
         const path = glyph.getPath(cursorX, 0, fontSize);
+
+        // Print the path to console for demo purposes
+        console.log(path.commands)
         
         //convert curves to list of points
         const rawContours = getContoursFromPath(path.commands, 10);
@@ -112,13 +116,13 @@ function generateTextVertices(text) {
             const largest = classified.reduce((a, b) => 
                 Math.abs(b.area) > Math.abs(a.area) ? b : a
             );
-            //contours with this sign are solid
+            //contours with this sign are solid(+ for CCW = solid ; - for CW = holes)
             const solidSign = Math.sign(largest.area);
 
-            //group contours into solid and respective holes
+            //group contours into solid and respective holes, first defined null and get start by line 146 below by loading in a new contour
             let currentSolid = null;
             
-            // Helper to process a complete solid (Front + Back + Sides)
+            // Helper funtion to process a complete solid (Front + Back + Sides)
             const processSolid = (solid) => {
                 //front face
                 triangulateSolid(solid, frontZ, allTriangles, false);
@@ -134,17 +138,23 @@ function generateTextVertices(text) {
 
             //assign the contour as solid or hole based on the sign
             classified.forEach(c => {
+                // solid face case:
                 if (Math.sign(c.area) === solidSign) {
+                    // complete the solid using the helper function
                     if (currentSolid) processSolid(currentSolid);
+                    //get the next solid structre
                     currentSolid = { outer: c.points, holes: [] };
-                } else {
+                }
+                // hole case:
+                else {
                     if (currentSolid) currentSolid.holes.push(c.points);
                 }
             });
+            // finish the last contour 
             if (currentSolid) processSolid(currentSolid);
         }
 
-        //move cursor to the right for the next glyph
+        //move drawing cursor to the right for the next glyph
         cursorX += glyph.advanceWidth * (fontSize / loadedFont.unitsPerEm)+currentSpacing;
     }
 
